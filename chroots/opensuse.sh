@@ -30,4 +30,4 @@ sudo dnf \
   --releasever=$RELEASE \
   --installroot="$CHROOT_DIR" \
   --nogpgcheck \
-  install bash glibc coreutils
+  install bash glibc coreutils filesystem dnf
