@@ -30,4 +30,6 @@ sudo dnf \
   --releasever=$RELEASE \
   --installroot="$CHROOT_DIR" \
   --nogpgcheck \
-  install bash glibc coreutils filesystem dnf
+  install \
+  bash coreutils filesystem vim tar gzip shadow \
+  zypper openSUSE-release rpm glibc glibc-locale less
