@@ -74,7 +74,7 @@ $FPM -s dir -t rpm \
   --maintainer "Benjamin Abendroth (braph93@gmx.de)" \
   --description "NoteBook FanControl ported to Linux" \
   --url "https://github.com/nbfc-linux/nbfc-linux" \
-  --depends "libcurl" \
+  --depends "libcurl4" \
   --prefix / \
   -C "$DEST_DIR" \
   usr etc bin
