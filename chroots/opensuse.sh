@@ -27,6 +27,6 @@ sudo zypper --root "$CHROOT_DIR" refresh
 sudo zypper --root "$CHROOT_DIR" install \
   -n \
   --no-recommends \
-  openSUSE-release zypper bash coreutils glibc vim less iputils
+  openSUSE-release zypper bash coreutils glibc vim less iputils ca-certificates
 
 sudo cp /etc/resolv.conf "$CHROOT_DIR/etc"
