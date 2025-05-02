@@ -1,6 +1,5 @@
 #!/bin/bash
 
-RELEASE=15.5
 CHROOT_DIR=/tmp/opensuse.nbfc-linux
 
 set -e
@@ -15,18 +14,13 @@ sudo pacman -S --needed zypper
 sudo mkdir -p "$CHROOT_DIR"
 
 sudo zypper --root "$CHROOT_DIR" ar \
-  "https://download.opensuse.org/distribution/leap/$RELEASE/repo/oss/" \
-  openSUSE-oss
-
-sudo zypper --root "$CHROOT_DIR" ar \
-  "https://download.opensuse.org/update/leap/$RELEASE/oss/" \
-  openSUSE-update
+  "https://download.opensuse.org/tumbleweed/repo/oss/" \
+  tumbleweed-oss
 
 sudo zypper --root "$CHROOT_DIR" refresh
 
 sudo zypper --root "$CHROOT_DIR" install \
   -n \
-  --no-recommends \
-  openSUSE-release zypper bash coreutils glibc vim less iputils ca-certificates
+  openSUSE-release zypper bash coreutils glibc vim less iputils
 
 sudo cp /etc/resolv.conf "$CHROOT_DIR/etc"
