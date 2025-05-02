@@ -1,9 +1,7 @@
 #!/bin/bash
 
-CHROOT_DIR=/tmp/opensuse.nbfc-linux
-CACHE_DIR=/tmp/opensuse.cache
-REPOS_DIR=/tmp/opensuse.repos
 RELEASE=15.5
+CHROOT_DIR=/tmp/opensuse.nbfc-linux
 
 set -e
 
@@ -11,25 +9,24 @@ echo "This will install Open Suse '$RELEASE' into $CHROOT_DIR"
 echo "Press enter to continue"
 read
 
-# Install debootstrap
-yay -S --needed dnf
+sudo pacman -S --needed zypper
 
 # Make chroot dir
 sudo mkdir -p "$CHROOT_DIR"
 
-# Make repos and cache dir
-mkdir -p "$REPOS_DIR" "$CACHE_DIR"
+sudo zypper --root "$CHROOT_DIR" ar \
+  "https://download.opensuse.org/distribution/leap/$RELEASE/repo/oss/" \
+  openSUSE-oss
 
-# Copy repo file
-cp ./opensuse.repo "$REPOS_DIR"
+sudo zypper --root "$CHROOT_DIR" ar \
+  "https://download.opensuse.org/update/leap/$RELEASE/oss/" \
+  openSUSE-update
 
-# Install opensuse into chroot
-sudo dnf \
-  --setopt=reposdir="$REPOS_DIR" \
-  --setopt=cachedir="$CACHE_DIR" \
-  --releasever=$RELEASE \
-  --installroot="$CHROOT_DIR" \
-  --nogpgcheck \
-  install \
-  bash coreutils filesystem vim tar gzip shadow \
-  zypper openSUSE-release rpm glibc glibc-locale less
+sudo zypper --root "$CHROOT_DIR" refresh
+
+sudo zypper --root "$CHROOT_DIR" install \
+  -n \
+  --no-recommends \
+  openSUSE-release zypper bash coreutils glibc vim less iputils
+
+sudo cp /etc/resolv.conf "$CHROOT_DIR/etc"
