@@ -7,15 +7,18 @@ RELEASE=42
 
 set -e
 
-echo "This will install fedora '$RELEASE' into $CHROOT_DIR"
-echo "Press enter to continue"
-read
+if [ "$EUID" -ne 0 ]; then
+  echo "Please run as root"
+  exit 1
+fi
 
-# Install debootstrap
-yay -S --needed dnf
+cd "$(dirname "$0")"
+
+# Install dnf
+pacman -S --needed dnf
 
 # Make chroot dir
-sudo mkdir -p "$CHROOT_DIR"
+mkdir -p "$CHROOT_DIR"
 
 # Make repos and cache dir
 mkdir -p "$REPOS_DIR" "$CACHE_DIR"
@@ -24,7 +27,7 @@ mkdir -p "$REPOS_DIR" "$CACHE_DIR"
 cp ./fedora.repo "$REPOS_DIR"
 
 # Install fedora into chroot
-sudo dnf \
+dnf \
   --setopt=reposdir="$REPOS_DIR" \
   --setopt=cachedir="$CACHE_DIR" \
   --releasever=$RELEASE \

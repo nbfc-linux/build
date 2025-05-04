@@ -1,8 +1,8 @@
 #!/bin/bash
 
 ARCH=amd64
-CHROOT_DIR=/tmp/debian.nbfc-linux
-RELEASE=bookworm
+CHROOT_DIR=/tmp/ubuntu.nbfc-linux
+RELEASE=jammy
 
 set -e
 
@@ -18,4 +18,4 @@ pacman -S --needed debootstrap
 mkdir -p "$CHROOT_DIR"
 
 # Install debian into chroot
-debootstrap --arch=$ARCH $RELEASE "$CHROOT_DIR" http://deb.debian.org/debian
+debootstrap --arch=$ARCH $RELEASE "$CHROOT_DIR" http://archive.ubuntu.com/ubuntu
