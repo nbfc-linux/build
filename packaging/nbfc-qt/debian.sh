@@ -59,4 +59,4 @@ fpm -s dir -t deb \
   --depends "python3-pyqt5" \
   --prefix / \
   -C "$DEST_DIR" \
-  bin
+  usr

@@ -56,4 +56,4 @@ $FPM -s dir -t rpm \
   --depends "python3-qt5" \
   --prefix / \
   -C "$DEST_DIR" \
-  bin
+  usr

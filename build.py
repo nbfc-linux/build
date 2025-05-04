@@ -21,15 +21,12 @@ if os.geteuid() != 0:
 def run(*args):
     result = subprocess.run(
         args,
-        stderr=subprocess.PIPE,
-        stdout=subprocess.PIPE,
-        text=True,
+        stderr=sys.stderr,
+        stdout=sys.stdout,
         check=False)
 
-    if result.returncode == 0:
-        return result.stdout.strip()
-
-    raise Exception('Command `%s` failed: %s' % (' '.join(args), result.stderr.strip()))
+    if result.returncode != 0:
+        raise Exception('Command `%s` failed' % args)
 
 def build(operating_system, package_glob, package_prefix, chroot, project):
     print('Building %s for %s in %s' % (project, operating_system, chroot))
