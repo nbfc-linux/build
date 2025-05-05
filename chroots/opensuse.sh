@@ -33,8 +33,7 @@ zypper --gpg-auto-import-keys --root "$CHROOT_DIR" ar \
 
 zypper --gpg-auto-import-keys --root "$CHROOT_DIR" refresh
 
-zypper --gpg-auto-import-keys --root "$CHROOT_DIR" install \
-  -n \
+zypper --gpg-auto-import-keys --root "$CHROOT_DIR" -n install \
   openSUSE-release zypper bash coreutils glibc vim less iputils
 
 cp /etc/resolv.conf "$CHROOT_DIR/etc"

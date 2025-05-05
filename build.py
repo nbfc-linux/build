@@ -28,7 +28,18 @@ def run(*args):
     if result.returncode != 0:
         raise Exception('Command `%s` failed' % args)
 
+def make_chroot(operating_system, chroot):
+    script = './chroots/%s.sh' % operating_system
+
+    if not os.path.exists(chroot):
+        print('Installing %s to chroot %s' % (operating_system, chroot))
+        run(script, chroot)
+    else:
+        print('Skip installing %s' % (operating_system,))
+
 def build(operating_system, package_glob, package_prefix, chroot, project):
+    make_chroot(operating_system, chroot)
+
     print('Building %s for %s in %s' % (project, operating_system, chroot))
 
     package_dest_dir = os.path.join(PACKAGE_DEST_DIR, project)
