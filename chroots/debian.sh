@@ -1,14 +1,27 @@
 #!/bin/bash
 
 ARCH=amd64
-CHROOT_DIR=/tmp/debian.nbfc-linux
-CACHE_DIR=/tmp/debian.cache
 RELEASE=bookworm
+CACHE_DIR=/tmp/debian.cache
 
 set -e
 
+cd "$(dirname "$0")"
+
 if [ "$EUID" -ne 0 ]; then
   echo "Please run as root"
+  exit 1
+fi
+
+if [[ "$#" != 1 ]]; then
+  echo "Usage: $0 <CHROOT_DIR>"
+  exit 1
+fi
+
+CHROOT_DIR="$1"
+
+if [[ "${CHROOT_DIR:0:1}" != '/' ]]; then
+  echo "$0: <CHROOT_DIR> has to be an absolute path!"
   exit 1
 fi
 
