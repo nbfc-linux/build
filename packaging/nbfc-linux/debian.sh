@@ -19,12 +19,8 @@ type autoreconf || {
   apt install -y autoconf
 }
 
-#type gcc || {
-#  dnf install -y gcc
-#}
-
-type g++ || {
-  apt install -y g++
+type gcc || {
+  apt install -y gcc
 }
 
 type make || {

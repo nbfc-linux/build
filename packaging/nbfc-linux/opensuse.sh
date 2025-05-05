@@ -28,10 +28,6 @@ type gcc || {
   zypper -n --gpg-auto-import-keys install --no-recommends gcc
 }
 
-type g++ || {
-  zypper -n --gpg-auto-import-keys install --no-recommends gcc-c++
-}
-
 type git || {
   zypper -n --gpg-auto-import-keys install --no-recommends git
 }

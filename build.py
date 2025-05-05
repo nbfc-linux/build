@@ -5,11 +5,17 @@ import sys
 import glob
 import shutil
 import subprocess
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--chroot-prefix-dir', default='/tmp')
+
+OPTS = parser.parse_args()
 
 PACKAGE_DEST_DIR = "/tmp/packages"
-DEBIAN_CHROOT    = "/tmp/debian.nbfc-linux"
-FEDORA_CHROOT    = "/tmp/fedora.nbfc-linux"
-OPENSUSE_CHROOT  = "/tmp/opensuse.nbfc-linux"
+DEBIAN_CHROOT    = os.path.join(OPTS.chroot_prefix_dir, "debian.nbfc-linux")
+FEDORA_CHROOT    = os.path.join(OPTS.chroot_prefix_dir, "fedora.nbfc-linux")
+OPENSUSE_CHROOT  = os.path.join(OPTS.chroot_prefix_dir, "opensuse.nbfc-linux")
 
 script_path = os.path.abspath(sys.argv[0])
 script_dir = os.path.dirname(script_path)

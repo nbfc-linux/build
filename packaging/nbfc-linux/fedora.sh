@@ -27,10 +27,6 @@ type gcc || {
   dnf install -y gcc
 }
 
-type g++ || {
-  dnf install -y g++
-}
-
 type git || {
   dnf install -y git
 }
