@@ -26,7 +26,7 @@ if [[ "${CHROOT_DIR:0:1}" != '/' ]]; then
 fi
 
 # Install dnf
-pacman -S --needed dnf
+pacman -S --needed dnf5
 
 # Make chroot dir
 mkdir -p "$CHROOT_DIR"
@@ -38,7 +38,7 @@ mkdir -p "$REPOS_DIR" "$CACHE_DIR"
 cp ./fedora.repo "$REPOS_DIR"
 
 # Install fedora into chroot
-dnf \
+dnf5 \
   -y \
   --setopt=reposdir="$REPOS_DIR" \
   --setopt=cachedir="$CACHE_DIR" \
