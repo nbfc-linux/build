@@ -45,6 +45,7 @@ make
 
 make DESTDIR="$DEST_DIR" install
 
+#  --depends "python3-qt5 | python3-qt6" \
 
 fpm -s dir -t rpm \
   -n nbfc-qt \
@@ -53,7 +54,7 @@ fpm -s dir -t rpm \
   --maintainer "Benjamin Abendroth (braph93@gmx.de)" \
   --description "GUI for NBFC-Linux (qt-based)" \
   --url "https://github.com/nbfc-linux/nbfc-qt" \
-  --depends "python3-qt5" \
+  --depends "python3" \
   --prefix / \
   -C "$DEST_DIR" \
   usr
