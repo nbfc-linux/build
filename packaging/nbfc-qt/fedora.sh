@@ -1,6 +1,6 @@
 #!/bin/bash
 
-DEST_DIR=/tmp/nbfc-linux.build
+DEST_DIR=/tmp/nbfc-qt.build
 
 set -e
 
