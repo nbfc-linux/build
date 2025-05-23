@@ -85,10 +85,13 @@ def build(operating_system, package_glob, package_prefix, chroot, project):
 os.makedirs(PACKAGE_DEST_DIR, exist_ok=True)
 
 build('debian', '*.deb', '', DEBIAN_CHROOT, 'nbfc-qt')
+build('debian', '*.deb', '', DEBIAN_CHROOT, 'nbfc-gtk')
 build('debian', '*.deb', '', DEBIAN_CHROOT, 'nbfc-linux')
 
 build('fedora', '*.rpm', 'fedora-', FEDORA_CHROOT, 'nbfc-qt')
+build('fedora', '*.rpm', 'fedora-', FEDORA_CHROOT, 'nbfc-gtk')
 build('fedora', '*.rpm', 'fedora-', FEDORA_CHROOT, 'nbfc-linux')
 
 build('opensuse', '*.rpm', 'opensuse-', OPENSUSE_CHROOT, 'nbfc-qt')
+build('opensuse', '*.rpm', 'opensuse-', OPENSUSE_CHROOT, 'nbfc-gtk')
 build('opensuse', '*.rpm', 'opensuse-', OPENSUSE_CHROOT, 'nbfc-linux')

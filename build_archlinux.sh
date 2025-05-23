@@ -5,10 +5,11 @@ set -e
 cd "$(dirname "$0")"
 
 rm -rf nbfc-qt
+rm -rf nbfc-gtk
 rm -rf nbfc-linux
 
 # =============================================================================
-# NBFC-QT
+# NBFC-Qt
 # =============================================================================
 
 git clone https://github.com/nbfc-linux/nbfc-qt
@@ -18,6 +19,20 @@ pushd nbfc-qt/pkgbuilds/nbfc-qt-git
 makepkg
 
 sudo cp *.pkg.tar.zst /tmp/packages/nbfc-qt
+
+popd
+
+# =============================================================================
+# NBFC-Gtk
+# =============================================================================
+
+git clone https://github.com/nbfc-linux/nbfc-gtk
+
+pushd nbfc-gtk/pkgbuilds/nbfc-gtk-git
+
+makepkg
+
+sudo cp *.pkg.tar.zst /tmp/packages/nbfc-gtk
 
 popd
 
