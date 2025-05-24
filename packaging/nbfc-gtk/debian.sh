@@ -56,6 +56,7 @@ fpm -s dir -t deb \
   --maintainer "Benjamin Abendroth (braph93@gmx.de)" \
   --description "GUI for NBFC-Linux (gtk-based)" \
   --url "https://github.com/nbfc-linux/nbfc-gtk" \
+  --depends "libgles2" \
   --depends "python3-gi" \
   --depends "gir1.2-gtk-4.0" \
   --prefix / \
