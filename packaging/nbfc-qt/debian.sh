@@ -56,7 +56,7 @@ fpm -s dir -t deb \
   --maintainer "Benjamin Abendroth (braph93@gmx.de)" \
   --description "GUI for NBFC-Linux (qt-based)" \
   --url "https://github.com/nbfc-linux/nbfc-qt" \
-  --depends "python3-pyqt5 | python3-pyqt6" \
+  --depends "python3-pyqt6 | python3-pyqt5" \
   --prefix / \
   -C "$DEST_DIR" \
   usr

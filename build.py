@@ -9,6 +9,12 @@ import argparse
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--chroot-prefix-dir', default='/tmp')
+parser.add_argument('--project', action='append',
+    help='Only build project. Can be specified multiple times')
+parser.add_argument('--os', action='append',
+    help='Only build for OS. Can be specified multiple times')
+parser.add_argument('--dry', action='store_true',
+    help='Only print out what would be built')
 
 OPTS = parser.parse_args()
 
@@ -84,14 +90,39 @@ def build(operating_system, package_glob, package_prefix, chroot, project):
 
 os.makedirs(PACKAGE_DEST_DIR, exist_ok=True)
 
-build('debian', '*.deb', '', DEBIAN_CHROOT, 'nbfc-qt')
-build('debian', '*.deb', '', DEBIAN_CHROOT, 'nbfc-gtk')
-build('debian', '*.deb', '', DEBIAN_CHROOT, 'nbfc-linux')
+class BuildRule:
+    def __init__(self, operating_system, package_glob, package_prefix, chroot, project):
+        self.operating_system = operating_system
+        self.package_glob = package_glob
+        self.package_prefix = package_prefix
+        self.chroot = chroot
+        self.project = project
 
-build('fedora', '*.rpm', 'fedora-', FEDORA_CHROOT, 'nbfc-qt')
-build('fedora', '*.rpm', 'fedora-', FEDORA_CHROOT, 'nbfc-gtk')
-build('fedora', '*.rpm', 'fedora-', FEDORA_CHROOT, 'nbfc-linux')
+builds = [
+    BuildRule('debian',   '*.deb', '',          DEBIAN_CHROOT,   'nbfc-qt'),
+    BuildRule('debian',   '*.deb', '',          DEBIAN_CHROOT,   'nbfc-gtk'),
+    BuildRule('debian',   '*.deb', '',          DEBIAN_CHROOT,   'nbfc-linux'),
 
-build('opensuse', '*.rpm', 'opensuse-', OPENSUSE_CHROOT, 'nbfc-qt')
-build('opensuse', '*.rpm', 'opensuse-', OPENSUSE_CHROOT, 'nbfc-gtk')
-build('opensuse', '*.rpm', 'opensuse-', OPENSUSE_CHROOT, 'nbfc-linux')
+    BuildRule('fedora',   '*.rpm', 'fedora-',   FEDORA_CHROOT,   'nbfc-qt'),
+    BuildRule('fedora',   '*.rpm', 'fedora-',   FEDORA_CHROOT,   'nbfc-gtk'),
+    BuildRule('fedora',   '*.rpm', 'fedora-',   FEDORA_CHROOT,   'nbfc-linux'),
+
+    BuildRule('opensuse', '*.rpm', 'opensuse-', OPENSUSE_CHROOT, 'nbfc-qt'),
+    BuildRule('opensuse', '*.rpm', 'opensuse-', OPENSUSE_CHROOT, 'nbfc-gtk'),
+    BuildRule('opensuse', '*.rpm', 'opensuse-', OPENSUSE_CHROOT, 'nbfc-linux'),
+]
+
+selected_builds = builds
+
+if OPTS.project:
+    selected_builds = filter(lambda rule: rule.project in OPTS.project, selected_builds)
+
+if OPTS.os:
+    selected_builds = filter(lambda rule: rule.operating_system in OPTS.os, selected_builds)
+
+for rule in selected_builds:
+    if OPTS.dry:
+        print('Building:', rule.operating_system, rule.package_glob, rule.package_prefix, rule.chroot, rule.project)
+        continue
+
+    build(rule.operating_system, rule.package_glob, rule.package_prefix, rule.chroot, rule.project)

@@ -41,11 +41,9 @@ cd nbfc-qt
 
 VERSION=$(cat VERSION)
 
-make
+make QT_VERSION=6
 
 make DESTDIR="$DEST_DIR" install
-
-#  --depends "python3-qt5 | python3-qt6" \
 
 fpm -s dir -t rpm \
   -n nbfc-qt \
@@ -55,6 +53,7 @@ fpm -s dir -t rpm \
   --description "GUI for NBFC-Linux (qt-based)" \
   --url "https://github.com/nbfc-linux/nbfc-qt" \
   --depends "python3" \
+  --depends "python3-pyqt6" \
   --prefix / \
   -C "$DEST_DIR" \
   usr
