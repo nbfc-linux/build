@@ -11,27 +11,16 @@ cat /etc/debian_version || {
   exit 1
 }
 
-type ruby || {
-  apt install -y ruby
-}
+apt update
 
-type make || {
-  apt install -y make
-}
+apt install -y \
+  git \
+  make \
+  python3 \
+  ruby \
+  binutils
 
-type git || {
-  apt install -y git
-}
-
-type python3 || {
-  apt install -y python3
-}
-
-type ar || {
-  apt install -y binutils
-}
-
-export PATH="$HOME/.local/share/gem/ruby/3.1.0/bin/:$PATH"
+export PATH="$HOME/.local/share/gem/ruby/3.3.0/bin/:$PATH"
 
 type fpm || {
   gem install --user-install fpm

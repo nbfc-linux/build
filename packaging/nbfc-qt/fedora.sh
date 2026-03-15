@@ -11,21 +11,12 @@ cat /etc/fedora-release || {
   exit 1
 }
 
-type ruby || {
-  dnf install -y ruby
-}
-
-type make || {
-  dnf install -y make
-}
-
-type git || {
-  dnf install -y git
-}
-
-type rpmbuild || {
-  dnf install -y rpmbuild
-}
+dnf install -y \
+  git \
+  make \
+  python3 \
+  ruby \
+  rpmbuild
 
 export PATH="$HOME/.local/share/gem/ruby/bin/:$PATH"
 

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-FPM=fpm.ruby3.4
+FPM=fpm.ruby4.0
 DEST_DIR=/tmp/nbfc-qt.build
 
 set -e
@@ -12,23 +12,14 @@ grep -i suse /etc/os-release || {
   exit 1
 }
 
-type ruby || {
-  zypper -n --gpg-auto-import-keys install --no-recommends ruby
-}
+zypper -n --gpg-auto-import-keys install --no-recommends \
+  git \
+  make \
+  python3 \
+  ruby \
+  rpm-build
 
-type make || {
-  zypper -n --gpg-auto-import-keys install --no-recommends make
-}
-
-type git || {
-  zypper -n --gpg-auto-import-keys install --no-recommends git
-}
-
-type rpmbuild || {
-  zypper -n --gpg-auto-import-keys install --no-recommends rpm-build
-}
-
-export PATH="$HOME/.local/share/gem/ruby/3.4.0/bin/:$PATH"
+export PATH="$HOME/.local/share/gem/ruby/4.0.0/bin/:$PATH"
 
 type $FPM || {
   gem install --user-install fpm

@@ -11,35 +11,15 @@ cat /etc/fedora-release || {
   exit 1
 }
 
-type ruby || {
-  dnf install -y ruby
-}
+dnf install -y \
+  git \
+  aclocal \
+  autoconf \
+  gcc \
+  libcurl-devel \
+  ruby \
+  rpmbuild
 
-type autoreconf || {
-  dnf install -y autoconf
-}
-
-type aclocal || {
-  dnf install -y aclocal
-}
-
-type gcc || {
-  dnf install -y gcc
-}
-
-type git || {
-  dnf install -y git
-}
-
-type rpmbuild || {
-  dnf install -y rpmbuild
-}
-
-[[ -d "/usr/include/curl" ]] || {
-  dnf install -y libcurl-devel
-}
-
-#export PATH="$HOME/.gem/ruby/$(ruby -e 'print RUBY_VERSION')/bin:$PATH"
 export PATH="$HOME/.local/share/gem/ruby/bin/:$PATH"
 
 type fpm || {
@@ -70,6 +50,7 @@ fpm -s dir -t rpm \
   --description "NoteBook FanControl ported to Linux" \
   --url "https://github.com/nbfc-linux/nbfc-linux" \
   --depends "libcurl" \
+  --depends "acpica-tools" \
   --prefix / \
   -C "$DEST_DIR" \
   usr etc bin

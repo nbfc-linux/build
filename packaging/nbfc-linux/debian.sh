@@ -11,40 +11,18 @@ cat /etc/debian_version || {
   exit 1
 }
 
-type ruby || {
-  apt install -y ruby
-}
+apt update
 
-type autoreconf || {
-  apt install -y autoconf
-}
+apt install -y \
+  git \
+  autoconf \
+  make \
+  gcc \
+  libcurl4 libcurl4-openssl-dev \
+  libssl-dev \
+  ruby
 
-type gcc || {
-  apt install -y gcc
-}
-
-type make || {
-  apt install -y make
-}
-
-type git || {
-  apt install -y git
-}
-
-type python3 || {
-  apt install -y pthone3
-}
-
-[[ -d "/usr/include/curl" ]] || {
-  apt install -y libcurl4 libcurl4-openssl-dev
-}
-
-[[ -d "/usr/include/openssl" ]] || {
-  apt install -y libssl-dev
-}
-
-#export PATH="$HOME/.gem/ruby/$(ruby -e 'print RUBY_VERSION')/bin:$PATH"
-export PATH="$HOME/.local/share/gem/ruby/3.1.0/bin/:$PATH"
+export PATH="$HOME/.local/share/gem/ruby/3.3.0/bin/:$PATH"
 
 type fpm || {
   gem install --user-install fpm
@@ -74,6 +52,8 @@ fpm -s dir -t deb \
   --description "NoteBook FanControl ported to Linux" \
   --url "https://github.com/nbfc-linux/nbfc-linux" \
   --depends "libcurl4" \
+  --depends "acpica-tools" \
+  --depends "acpi-call" \
   --prefix / \
   -C "$DEST_DIR" \
   usr etc

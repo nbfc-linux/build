@@ -8,7 +8,8 @@ import subprocess
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--chroot-prefix-dir', default='/tmp')
+parser.add_argument('--dir', default='/tmp')
+parser.add_argument('--package-dir', default='/tmp/packages')
 parser.add_argument('--project', action='append',
     help='Only build project. Can be specified multiple times')
 parser.add_argument('--os', action='append',
@@ -18,14 +19,9 @@ parser.add_argument('--dry', action='store_true',
 
 OPTS = parser.parse_args()
 
-PACKAGE_DEST_DIR = "/tmp/packages"
-DEBIAN_CHROOT    = os.path.join(OPTS.chroot_prefix_dir, "debian.nbfc-linux")
-FEDORA_CHROOT    = os.path.join(OPTS.chroot_prefix_dir, "fedora.nbfc-linux")
-OPENSUSE_CHROOT  = os.path.join(OPTS.chroot_prefix_dir, "opensuse.nbfc-linux")
-
-script_path = os.path.abspath(sys.argv[0])
-script_dir = os.path.dirname(script_path)
-os.chdir(script_dir)
+SCRIPT_PATH = os.path.abspath(sys.argv[0])
+SCRIPT_DIR = os.path.dirname(SCRIPT_PATH)
+os.chdir(SCRIPT_DIR)
 
 if os.geteuid() != 0:
     raise Exception("Please run this script as root")
@@ -38,78 +34,98 @@ def run(*args):
         check=False)
 
     if result.returncode != 0:
-        raise Exception('Command `%s` failed' % args)
+        raise Exception('Command `%s` failed' % ' '.join(args))
 
-def make_chroot(operating_system, chroot):
-    script = './chroots/%s.sh' % operating_system
-
-    if not os.path.exists(chroot):
-        print('Installing %s to chroot %s' % (operating_system, chroot))
-        run(script, chroot)
-    else:
-        print('Skip installing %s' % (operating_system,))
-
-def build(operating_system, package_glob, package_prefix, chroot, project):
-    make_chroot(operating_system, chroot)
-
-    print('Building %s for %s in %s' % (project, operating_system, chroot))
-
-    package_dest_dir = os.path.join(PACKAGE_DEST_DIR, project)
-    os.makedirs(package_dest_dir, exist_ok=True)
-
-    if not os.path.isdir(chroot):
-        raise Exception("Chroot directory not found: %s" % chroot)
-
-    build_script_filename = '%s.sh' % operating_system
-
-    root_user_dir       = os.path.join(chroot, 'root')
-    build_script        = os.path.join('./packaging', project, build_script_filename)
-    chroot_build_script = os.path.join(root_user_dir, build_script_filename)
-    build_command       = os.path.join('/root', build_script_filename)
-
-    print("\tCopying %s to %s" % (build_script, chroot_build_script))
-    shutil.copy(build_script, chroot_build_script)
-
-    print("\tRunning arch-chroot ...")
-    run('arch-chroot', chroot, build_command)
-
-    print("\tSearching for package ...")
-    files = glob.glob(os.path.join(root_user_dir, project, package_glob))
-    if not files:
-        raise Exception('No package found')
-    if len(files) > 1:
-        raise Exception('Too much packages found: %s' % files)
-    package = files[0]
-    print("\tFound package: ", package)
-
-    package_basename = os.path.basename(package)
-
-    print("\tCopying package ...")
-    dest_package = os.path.join(package_dest_dir, "%s%s" % (package_prefix, package_basename))
-    shutil.copy(package, dest_package)
-
-os.makedirs(PACKAGE_DEST_DIR, exist_ok=True)
-
-class BuildRule:
-    def __init__(self, operating_system, package_glob, package_prefix, chroot, project):
-        self.operating_system = operating_system
-        self.package_glob = package_glob
-        self.package_prefix = package_prefix
-        self.chroot = chroot
+class ProjectBuild:
+    def __init__(self, os, image, project, package_glob):
+        self.os = os
+        self.image = image
         self.project = project
+        self.package_glob = package_glob
+        self.directory = OPTS.dir
+        self.chroot_dir = '%s/%s-%s-chroot' % (self.directory, self.os, self.project)
+        self.podman_root = '%s/podman-root' % self.directory
+        self.podman_runroot = '%s/podman-runroot' % self.directory
+
+    def create_chroot(self):
+        if os.path.exists(self.chroot_dir):
+            print('Skip installing chroot %s ...' % self.chroot_dir)
+            return
+
+        print('Installing chroot %s ...' % self.chroot_dir)
+        run('./create_chroot.sh', self.podman_root, self.podman_runroot, self.image, self.chroot_dir)
+
+    def mount_chroot(self):
+        shutil.copy('/etc/resolv.conf', '%s/etc/resolv.conf' % self.chroot_dir)
+
+        run('mount', '-t', 'proc', 'proc', '%s/proc' % self.chroot_dir)
+
+        run('mount', '--rbind', '/sys',    '%s/sys'  % self.chroot_dir)
+        run('mount', '--make-rslave',      '%s/sys'  % self.chroot_dir)
+
+        run('mount', '--rbind', '/dev',    '%s/dev'  % self.chroot_dir)
+        run('mount', '--make-rslave',      '%s/dev'  % self.chroot_dir)
+
+        run('mount', '--rbind', '/run',    '%s/run'  % self.chroot_dir)
+        run('mount', '--make-rslave',      '%s/run'  % self.chroot_dir)
+
+    def umount_chroot(self):
+        try: run('umount', '-R', '%s/dev'  % self.chroot_dir)
+        except: pass
+        try: run('umount', '-R', '%s/sys'  % self.chroot_dir)
+        except: pass
+        try: run('umount', '-R', '%s/proc' % self.chroot_dir)
+        except: pass
+        try: run('umount', '-R', '%s/run'  % self.chroot_dir)
+        except: pass
+
+    def package(self):
+        print('Building %s for %s ...' % (self.project, self.os))
+        script = './packaging/%s/%s.sh' % (self.project, self.os)
+        dest = '%s/root' % self.chroot_dir
+        print("Copying %s to %s" % (script, dest))
+        shutil.copy(script, dest)
+        run('chroot', self.chroot_dir, './root/%s.sh' % self.os)
+
+    def move_package(self):
+        pattern = '%s/root/%s/%s' % (self.chroot_dir, self.project, self.package_glob)
+        files = glob.glob(pattern)
+        if not files:
+            raise Exception('No package found')
+        if len(files) > 1:
+            raise Exception('Too much packages found: %s' % files)
+        package = files[0]
+        package_basename = os.path.basename(package)
+        print("Found package: ", package)
+        dest_package = '%s/%s-%s' % (OPTS.package_dir, self.os, package_basename)
+        print("Copying %s to %s" % (package, dest_package))
+        shutil.copy(package, dest_package)
+
+os.makedirs(OPTS.package_dir, exist_ok=True)
+
+DEBIAN_IMAGE = "docker.io/library/debian:trixie"
+FEDORA_IMAGE = "registry.fedoraproject.org/fedora:43"
+OPENSUSE_IMAGE = "registry.opensuse.org/opensuse/tumbleweed:latest"
+ARCHLINUX_IMAGE = "docker.io/library/archlinux:latest"
 
 builds = [
-    BuildRule('debian',   '*.deb', '',          DEBIAN_CHROOT,   'nbfc-qt'),
-    BuildRule('debian',   '*.deb', '',          DEBIAN_CHROOT,   'nbfc-gtk'),
-    BuildRule('debian',   '*.deb', '',          DEBIAN_CHROOT,   'nbfc-linux'),
+    # NBFC-Linux
+    ProjectBuild("debian",     DEBIAN_IMAGE,    "nbfc-linux", "*.deb"),
+    ProjectBuild("fedora",     FEDORA_IMAGE,    "nbfc-linux", "*.rpm"),
+    ProjectBuild("opensuse",   OPENSUSE_IMAGE,  "nbfc-linux", "*.rpm"),
+    ProjectBuild("arch-linux", ARCHLINUX_IMAGE, "nbfc-linux", "*.pkg.tar.zst"),
 
-    BuildRule('fedora',   '*.rpm', 'fedora-',   FEDORA_CHROOT,   'nbfc-qt'),
-    BuildRule('fedora',   '*.rpm', 'fedora-',   FEDORA_CHROOT,   'nbfc-gtk'),
-    BuildRule('fedora',   '*.rpm', 'fedora-',   FEDORA_CHROOT,   'nbfc-linux'),
+    # NBFC-Gtk
+    ProjectBuild("debian",     DEBIAN_IMAGE,    "nbfc-gtk",   "*.deb"),
+    ProjectBuild("fedora",     FEDORA_IMAGE,    "nbfc-gtk",   "*.rpm"),
+    ProjectBuild("opensuse",   OPENSUSE_IMAGE,  "nbfc-gtk",   "*.rpm"),
+    ProjectBuild("arch-linux", ARCHLINUX_IMAGE, "nbfc-gtk",   "*.pkg.tar.zst"),
 
-    BuildRule('opensuse', '*.rpm', 'opensuse-', OPENSUSE_CHROOT, 'nbfc-qt'),
-    BuildRule('opensuse', '*.rpm', 'opensuse-', OPENSUSE_CHROOT, 'nbfc-gtk'),
-    BuildRule('opensuse', '*.rpm', 'opensuse-', OPENSUSE_CHROOT, 'nbfc-linux'),
+    # NBFC-Qt
+    ProjectBuild("debian",     DEBIAN_IMAGE,    "nbfc-qt",    "*.deb"),
+    ProjectBuild("fedora",     FEDORA_IMAGE,    "nbfc-qt",    "*.rpm"),
+    ProjectBuild("opensuse",   OPENSUSE_IMAGE,  "nbfc-qt",    "*.rpm"),
+    ProjectBuild("arch-linux", ARCHLINUX_IMAGE, "nbfc-qt",    "*.pkg.tar.zst")
 ]
 
 selected_builds = builds
@@ -118,11 +134,17 @@ if OPTS.project:
     selected_builds = filter(lambda rule: rule.project in OPTS.project, selected_builds)
 
 if OPTS.os:
-    selected_builds = filter(lambda rule: rule.operating_system in OPTS.os, selected_builds)
+    selected_builds = filter(lambda rule: rule.os in OPTS.os, selected_builds)
 
-for rule in selected_builds:
+for build in selected_builds:
     if OPTS.dry:
-        print('Building:', rule.operating_system, rule.package_glob, rule.package_prefix, rule.chroot, rule.project)
+        print('Building:', build.os, build.project)
         continue
 
-    build(rule.operating_system, rule.package_glob, rule.package_prefix, rule.chroot, rule.project)
+    build.create_chroot()
+    try:
+        build.mount_chroot()
+        build.package()
+        build.move_package()
+    finally:
+        build.umount_chroot()
