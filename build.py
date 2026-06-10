@@ -10,6 +10,7 @@ import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument('--dir', default='/tmp')
 parser.add_argument('--package-dir', default='/tmp/packages')
+parser.add_argument('--ignore-errors', action='store_true')
 parser.add_argument('--project', action='append',
     help='Only build project. Can be specified multiple times')
 parser.add_argument('--os', action='append',
@@ -37,8 +38,9 @@ def run(*args):
         raise Exception('Command `%s` failed' % ' '.join(args))
 
 class ProjectBuild:
-    def __init__(self, os, image, project, package_glob):
+    def __init__(self, os, build_script, image, project, package_glob):
         self.os = os
+        self.build_script = build_script
         self.image = image
         self.project = project
         self.package_glob = package_glob
@@ -81,11 +83,11 @@ class ProjectBuild:
 
     def package(self):
         print('Building %s for %s ...' % (self.project, self.os))
-        script = './packaging/%s/%s.sh' % (self.project, self.os)
+        script = './packaging/%s/%s' % (self.project, self.build_script)
         dest = '%s/root' % self.chroot_dir
         print("Copying %s to %s" % (script, dest))
         shutil.copy(script, dest)
-        run('chroot', self.chroot_dir, './root/%s.sh' % self.os)
+        run('chroot', self.chroot_dir, './root/%s' % self.build_script)
 
     def move_package(self):
         pattern = '%s/root/%s/%s' % (self.chroot_dir, self.project, self.package_glob)
@@ -103,29 +105,49 @@ class ProjectBuild:
 
 os.makedirs(OPTS.package_dir, exist_ok=True)
 
-DEBIAN_IMAGE = "docker.io/library/debian:trixie"
-FEDORA_IMAGE = "registry.fedoraproject.org/fedora:43"
-OPENSUSE_IMAGE = "registry.opensuse.org/opensuse/tumbleweed:latest"
-ARCHLINUX_IMAGE = "docker.io/library/archlinux:latest"
+DEBIAN_TRIXIE     = "docker.io/library/debian:trixie"
+DEBIAN_BOOKWORM   = "docker.io/library/debian:bookworm"
+DEBIAN_LATEST     = DEBIAN_TRIXIE
+
+UBUNTU_NOBLE      = "ubuntu:noble"
+UBUNTU_JAMMY      = "ubuntu:jammy"
+UBUNTU_LATEST     = UBUNTU_NOBLE
+
+LINUX_MINT_22     = "docker.io/linuxmintd/mint22-amd64"
+LINUX_MINT_21     = "docker.io/linuxmintd/mint21-amd64"
+LINUX_MINT_LATEST = LINUX_MINT_22
+
+FEDORA_44         = "registry.fedoraproject.org/fedora:44"
+FEDORA_43         = "registry.fedoraproject.org/fedora:43"
+FEDORA_LATEST     = FEDORA_44
+
+OPENSUSE_IMAGE    = "registry.opensuse.org/opensuse/tumbleweed:latest"
+ARCHLINUX_IMAGE   = "docker.io/library/archlinux:latest"
 
 builds = [
     # NBFC-Linux
-    ProjectBuild("debian",     DEBIAN_IMAGE,    "nbfc-linux", "*.deb"),
-    ProjectBuild("fedora",     FEDORA_IMAGE,    "nbfc-linux", "*.rpm"),
-    ProjectBuild("opensuse",   OPENSUSE_IMAGE,  "nbfc-linux", "*.rpm"),
-    ProjectBuild("arch-linux", ARCHLINUX_IMAGE, "nbfc-linux", "*.pkg.tar.zst"),
+    ProjectBuild("debian-trixie",   "debian.sh",     DEBIAN_TRIXIE,   "nbfc-linux", "*.deb"),
+    ProjectBuild("debian-bookworm", "debian.sh",     DEBIAN_BOOKWORM, "nbfc-linux", "*.deb"),
+    ProjectBuild("ubuntu-noble",    "debian.sh",     UBUNTU_NOBLE,    "nbfc-linux", "*.deb"),
+    ProjectBuild("ubuntu-jammy",    "debian.sh",     UBUNTU_JAMMY,    "nbfc-linux", "*.deb"),
+    ProjectBuild("linux-mint-22",   "debian.sh",     LINUX_MINT_22,   "nbfc-linux", "*.deb"),
+    ProjectBuild("linux-mint-21",   "debian.sh",     LINUX_MINT_21,   "nbfc-linux", "*.deb"),
+    ProjectBuild("fedora-44",       "fedora.sh",     FEDORA_44,       "nbfc-linux", "*.rpm"),
+    ProjectBuild("fedora-43",       "fedora.sh",     FEDORA_43,       "nbfc-linux", "*.rpm"),
+    ProjectBuild("opensuse",        "opensuse.sh",   OPENSUSE_IMAGE,  "nbfc-linux", "*.rpm"),
+    ProjectBuild("arch-linux",      "arch-linux.sh", ARCHLINUX_IMAGE, "nbfc-linux", "*.pkg.tar.zst"),
 
     # NBFC-Gtk
-    ProjectBuild("debian",     DEBIAN_IMAGE,    "nbfc-gtk",   "*.deb"),
-    ProjectBuild("fedora",     FEDORA_IMAGE,    "nbfc-gtk",   "*.rpm"),
-    ProjectBuild("opensuse",   OPENSUSE_IMAGE,  "nbfc-gtk",   "*.rpm"),
-    ProjectBuild("arch-linux", ARCHLINUX_IMAGE, "nbfc-gtk",   "*.pkg.tar.zst"),
+    ProjectBuild("debian",          "debian.sh",     DEBIAN_LATEST,   "nbfc-gtk",   "*.deb"),
+    ProjectBuild("fedora",          "fedora.sh",     FEDORA_LATEST,   "nbfc-gtk",   "*.rpm"),
+    ProjectBuild("opensuse",        "opensuse.sh",   OPENSUSE_IMAGE,  "nbfc-gtk",   "*.rpm"),
+    ProjectBuild("arch-linux",      "arch-linux.sh", ARCHLINUX_IMAGE, "nbfc-gtk",   "*.pkg.tar.zst"),
 
     # NBFC-Qt
-    ProjectBuild("debian",     DEBIAN_IMAGE,    "nbfc-qt",    "*.deb"),
-    ProjectBuild("fedora",     FEDORA_IMAGE,    "nbfc-qt",    "*.rpm"),
-    ProjectBuild("opensuse",   OPENSUSE_IMAGE,  "nbfc-qt",    "*.rpm"),
-    ProjectBuild("arch-linux", ARCHLINUX_IMAGE, "nbfc-qt",    "*.pkg.tar.zst")
+    ProjectBuild("debian",          "debian.sh",     DEBIAN_LATEST,   "nbfc-qt",    "*.deb"),
+    ProjectBuild("fedora",          "fedora.sh",     FEDORA_LATEST,   "nbfc-qt",    "*.rpm"),
+    ProjectBuild("opensuse",        "opensuse.sh",   OPENSUSE_IMAGE,  "nbfc-qt",    "*.rpm"),
+    ProjectBuild("arch-linux",      "arch-linux.sh", ARCHLINUX_IMAGE, "nbfc-qt",    "*.pkg.tar.zst")
 ]
 
 selected_builds = builds
@@ -141,10 +163,22 @@ for build in selected_builds:
         print('Building:', build.os, build.project)
         continue
 
-    build.create_chroot()
+    try:
+        build.create_chroot()
+    except Exception as e:
+        if OPTS.ignore_errors:
+            continue
+        else:
+            raise e
+
     try:
         build.mount_chroot()
         build.package()
         build.move_package()
+    except Exception as e:
+        if OPTS.ignore_errors:
+            continue
+        else:
+            raise e
     finally:
         build.umount_chroot()

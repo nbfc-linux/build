@@ -20,9 +20,14 @@ apt install -y \
   gcc \
   libcurl4 libcurl4-openssl-dev \
   libssl-dev \
+  liblua5.4-dev \
+  libxml2 libxml2-dev \
   ruby
 
-export PATH="$HOME/.local/share/gem/ruby/3.3.0/bin/:$PATH"
+export PATH="$HOME/.local/share/gem/ruby/3.3.0/bin/:$PATH" # debian trixie
+export PATH="$HOME/.local/share/gem/ruby/3.2.0/bin/:$PATH" # ubuntu noble
+export PATH="$HOME/.local/share/gem/ruby/3.1.0/bin/:$PATH" # debian bookworm
+export PATH="$HOME/.local/share/gem/ruby/3.0.0/bin/:$PATH" # ubuntu jammy
 
 type fpm || {
   gem install --user-install fpm
@@ -34,7 +39,7 @@ git clone https://github.com/nbfc-linux/nbfc-linux
 
 cd nbfc-linux
 
-VERSION=$(grep AC_INIT ./configure.ac  | grep -Eo '[0-9]+\.[0-9]+\.[0-9]+')
+VERSION=$(grep AC_INIT ./configure.ac | grep -Eo '[0-9]+\.[0-9]+\.[0-9]+')
 
 ./autogen.sh
 
@@ -52,6 +57,8 @@ fpm -s dir -t deb \
   --description "NoteBook FanControl ported to Linux" \
   --url "https://github.com/nbfc-linux/nbfc-linux" \
   --depends "libcurl4" \
+  --depends "liblua5.4-0" \
+  --depends "libxml2" \
   --depends "acpica-tools" \
   --depends "acpi-call" \
   --prefix / \

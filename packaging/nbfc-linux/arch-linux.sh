@@ -15,7 +15,9 @@ pacman -Sy
 
 pacman -S --noconfirm --needed \
   git \
-  base-devel
+  base-devel \
+  lua \
+  libxml2
 
 rm -rf nbfc-linux
 

@@ -18,6 +18,8 @@ zypper -n --gpg-auto-import-keys install --no-recommends \
   autoconf \
   gcc \
   libcurl-devel \
+  lua54-devel \
+  libxml2-devel \
   ruby \
   rpmbuild
 
@@ -51,6 +53,8 @@ $FPM -s dir -t rpm \
   --description "NoteBook FanControl ported to Linux" \
   --url "https://github.com/nbfc-linux/nbfc-linux" \
   --depends "libcurl4" \
+  --depends "liblua5_4-5" \
+  --depends "libxml2" \
   --depends "acpica" \
   --prefix / \
   -C "$DEST_DIR" \

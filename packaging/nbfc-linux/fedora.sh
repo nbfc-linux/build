@@ -17,6 +17,8 @@ dnf install -y \
   autoconf \
   gcc \
   libcurl-devel \
+  lua-devel \
+  libxml2-devel \
   ruby \
   rpmbuild
 
@@ -32,7 +34,7 @@ git clone https://github.com/nbfc-linux/nbfc-linux
 
 cd nbfc-linux
 
-VERSION=$(grep AC_INIT ./configure.ac  | grep -Eo '[0-9]+\.[0-9]+\.[0-9]+')
+VERSION=$(grep AC_INIT ./configure.ac | grep -Eo '[0-9]+\.[0-9]+\.[0-9]+')
 
 ./autogen.sh
 
@@ -50,6 +52,8 @@ fpm -s dir -t rpm \
   --description "NoteBook FanControl ported to Linux" \
   --url "https://github.com/nbfc-linux/nbfc-linux" \
   --depends "libcurl" \
+  --depends "lua-libs" \
+  --depends "libxml2" \
   --depends "acpica-tools" \
   --prefix / \
   -C "$DEST_DIR" \
