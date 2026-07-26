@@ -4,17 +4,30 @@ import os
 import sys
 import glob
 import shutil
-import subprocess
 import argparse
+import tempfile
+import subprocess
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--dir', default='/tmp')
-parser.add_argument('--package-dir', default='/tmp/packages')
-parser.add_argument('--ignore-errors', action='store_true')
+
+parser.add_argument('--dir', default='/tmp',
+    help='Directory for podman')
+
+parser.add_argument('--package-dir', default='/tmp/packages',
+    help='Directory where packages will be stored')
+
+parser.add_argument('--ignore-errors', action='store_true',
+    help='Ignore errors')
+
+parser.add_argument('--recreate', action='store_true',
+    help='Recreate containers before building')
+
 parser.add_argument('--project', action='append',
     help='Only build project. Can be specified multiple times')
+
 parser.add_argument('--os', action='append',
     help='Only build for OS. Can be specified multiple times')
+
 parser.add_argument('--dry', action='store_true',
     help='Only print out what would be built')
 
@@ -23,9 +36,6 @@ OPTS = parser.parse_args()
 SCRIPT_PATH = os.path.abspath(sys.argv[0])
 SCRIPT_DIR = os.path.dirname(SCRIPT_PATH)
 os.chdir(SCRIPT_DIR)
-
-if os.geteuid() != 0:
-    raise Exception("Please run this script as root")
 
 def run(*args):
     result = subprocess.run(
@@ -37,6 +47,44 @@ def run(*args):
     if result.returncode != 0:
         raise Exception('Command `%s` failed' % ' '.join(args))
 
+class PodMan:
+    def __init__(self, root, run_root, name, image):
+        self.root = root
+        self.run_root = run_root
+        self.name = name
+        self.image = image
+
+    def _run(self, *args):
+        run('podman', '--root', self.root, '--runroot', self.run_root, *args)
+
+    def create(self):
+        print('Creating container %s with image %s ...' % (self.name, self.image))
+        self._run('create', '--name', self.name, self.image, 'sleep', 'infinity')
+
+    def start(self):
+        print('Starting container %s ...' % self.name)
+        self._run('start', self.name)
+
+    def stop(self):
+        print('Stopping container %s ...' % self.name)
+        self._run('stop', '-t', '1', self.name)
+
+    def exec(self, *args):
+        print('Container %s: executing ...' % self.name, args)
+        self._run('exec', self.name, *args)
+
+    def cp_to_container(self, source, dest):
+        print('Copying %s to %s:%s ...' % (source, self.name, dest))
+        self._run('cp', source, '%s:%s' % (self.name, dest))
+
+    def cp_from_container(self, source, dest):
+        print('Copying %s:%s to %s ...' % (self.name, source, dest))
+        self._run('cp', '%s:%s' % (self.name, source), dest)
+
+    def remove(self):
+        print('Removing container %s ...' % self.name)
+        self._run('rm', self.name)
+
 class ProjectBuild:
     def __init__(self, os, build_script, image, project, package_glob):
         self.os = os
@@ -45,63 +93,55 @@ class ProjectBuild:
         self.project = project
         self.package_glob = package_glob
         self.directory = OPTS.dir
-        self.chroot_dir = '%s/%s-%s-chroot' % (self.directory, self.os, self.project)
-        self.podman_root = '%s/podman-root' % self.directory
-        self.podman_runroot = '%s/podman-runroot' % self.directory
 
-    def create_chroot(self):
-        if os.path.exists(self.chroot_dir):
-            print('Skip installing chroot %s ...' % self.chroot_dir)
-            return
+        podman_root = '%s/podman-root' % self.directory
+        podman_runroot = '%s/podman-runroot' % self.directory
+        name = '%s-%s' % (self.os, self.project)
+        self.podman = PodMan(podman_root, podman_runroot, name, image)
 
-        print('Installing chroot %s ...' % self.chroot_dir)
-        run('./create_chroot.sh', self.podman_root, self.podman_runroot, self.image, self.chroot_dir)
+    def build(self):
+        if OPTS.recreate:
+            try:
+                self.podman.remove()
+            except:
+                pass
 
-    def mount_chroot(self):
-        shutil.copy('/etc/resolv.conf', '%s/etc/resolv.conf' % self.chroot_dir)
+        try:
+            self.podman.create()
+        except:
+            pass
 
-        run('mount', '-t', 'proc', 'proc', '%s/proc' % self.chroot_dir)
-
-        run('mount', '--rbind', '/sys',    '%s/sys'  % self.chroot_dir)
-        run('mount', '--make-rslave',      '%s/sys'  % self.chroot_dir)
-
-        run('mount', '--rbind', '/dev',    '%s/dev'  % self.chroot_dir)
-        run('mount', '--make-rslave',      '%s/dev'  % self.chroot_dir)
-
-        run('mount', '--rbind', '/run',    '%s/run'  % self.chroot_dir)
-        run('mount', '--make-rslave',      '%s/run'  % self.chroot_dir)
-
-    def umount_chroot(self):
-        try: run('umount', '-R', '%s/dev'  % self.chroot_dir)
-        except: pass
-        try: run('umount', '-R', '%s/sys'  % self.chroot_dir)
-        except: pass
-        try: run('umount', '-R', '%s/proc' % self.chroot_dir)
-        except: pass
-        try: run('umount', '-R', '%s/run'  % self.chroot_dir)
-        except: pass
+        self.package()
+        self.copy_package()
 
     def package(self):
-        print('Building %s for %s ...' % (self.project, self.os))
         script = './packaging/%s/%s' % (self.project, self.build_script)
-        dest = '%s/root' % self.chroot_dir
-        print("Copying %s to %s" % (script, dest))
-        shutil.copy(script, dest)
-        run('chroot', self.chroot_dir, './root/%s' % self.build_script)
+        self.podman.cp_to_container(script, '/root')
 
-    def move_package(self):
-        pattern = '%s/root/%s/%s' % (self.chroot_dir, self.project, self.package_glob)
-        files = glob.glob(pattern)
-        if not files:
-            raise Exception('No package found')
-        if len(files) > 1:
-            raise Exception('Too much packages found: %s' % files)
-        package = files[0]
-        package_basename = os.path.basename(package)
-        print("Found package: ", package)
-        dest_package = '%s/%s-%s' % (OPTS.package_dir, self.os, package_basename)
-        print("Copying %s to %s" % (package, dest_package))
-        shutil.copy(package, dest_package)
+        try:
+            self.podman.start()
+            self.podman.exec('/root/%s' % self.build_script)
+        finally:
+            self.podman.stop()
+
+    def copy_package(self):
+        with tempfile.TemporaryDirectory() as tempdir:
+            self.podman.cp_from_container('/root/%s' % self.project, tempdir)
+
+            pattern = '%s/%s/%s' % (tempdir, self.project, self.package_glob)
+            files = glob.glob(pattern)
+
+            if not files:
+                raise Exception('No package found')
+            if len(files) > 1:
+                raise Exception('Too much packages found: %s' % files)
+
+            package = files[0]
+            package_basename = os.path.basename(package)
+            print("Found package: ", package)
+            dest_package = '%s/%s-%s' % (OPTS.package_dir, self.os, package_basename)
+            print("Copying %s to %s" % (package, dest_package))
+            shutil.copy(package, dest_package)
 
 os.makedirs(OPTS.package_dir, exist_ok=True)
 
@@ -137,6 +177,18 @@ builds = [
     ProjectBuild("opensuse",        "opensuse.sh",   OPENSUSE_IMAGE,  "nbfc-linux", "*.rpm"),
     ProjectBuild("arch-linux",      "arch-linux.sh", ARCHLINUX_IMAGE, "nbfc-linux", "*.pkg.tar.zst"),
 
+    # NBFC-XFCE4-Tray
+    ProjectBuild("debian-trixie",   "debian.sh",     DEBIAN_TRIXIE,   "nbfc-xfce4-tray", "*.deb"),
+    ProjectBuild("debian-bookworm", "debian.sh",     DEBIAN_BOOKWORM, "nbfc-xfce4-tray", "*.deb"),
+    ProjectBuild("ubuntu-noble",    "debian.sh",     UBUNTU_NOBLE,    "nbfc-xfce4-tray", "*.deb"),
+    ProjectBuild("ubuntu-jammy",    "debian.sh",     UBUNTU_JAMMY,    "nbfc-xfce4-tray", "*.deb"),
+    ProjectBuild("linux-mint-22",   "debian.sh",     LINUX_MINT_22,   "nbfc-xfce4-tray", "*.deb"),
+    ProjectBuild("linux-mint-21",   "debian.sh",     LINUX_MINT_21,   "nbfc-xfce4-tray", "*.deb"),
+    ProjectBuild("fedora-44",       "fedora.sh",     FEDORA_44,       "nbfc-xfce4-tray", "*.rpm"),
+    ProjectBuild("fedora-43",       "fedora.sh",     FEDORA_43,       "nbfc-xfce4-tray", "*.rpm"),
+    ProjectBuild("opensuse",        "opensuse.sh",   OPENSUSE_IMAGE,  "nbfc-xfce4-tray", "*.rpm"),
+    ProjectBuild("arch-linux",      "arch-linux.sh", ARCHLINUX_IMAGE, "nbfc-xfce4-tray", "*.pkg.tar.zst"),
+
     # NBFC-Gtk
     ProjectBuild("debian",          "debian.sh",     DEBIAN_LATEST,   "nbfc-gtk",   "*.deb"),
     ProjectBuild("fedora",          "fedora.sh",     FEDORA_LATEST,   "nbfc-gtk",   "*.rpm"),
@@ -159,26 +211,14 @@ if OPTS.os:
     selected_builds = filter(lambda rule: rule.os in OPTS.os, selected_builds)
 
 for build in selected_builds:
+    print('Building %s for %s ...' % (build.project, build.os))
     if OPTS.dry:
-        print('Building:', build.os, build.project)
         continue
 
     try:
-        build.create_chroot()
+        build.build()
     except Exception as e:
         if OPTS.ignore_errors:
             continue
         else:
             raise e
-
-    try:
-        build.mount_chroot()
-        build.package()
-        build.move_package()
-    except Exception as e:
-        if OPTS.ignore_errors:
-            continue
-        else:
-            raise e
-    finally:
-        build.umount_chroot()
