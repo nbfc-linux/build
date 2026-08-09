@@ -149,9 +149,10 @@ DEBIAN_TRIXIE     = "docker.io/library/debian:trixie"
 DEBIAN_BOOKWORM   = "docker.io/library/debian:bookworm"
 DEBIAN_LATEST     = DEBIAN_TRIXIE
 
+UBUNTU_RESOLUTE   = "ubuntu:resolute"
 UBUNTU_NOBLE      = "ubuntu:noble"
 UBUNTU_JAMMY      = "ubuntu:jammy"
-UBUNTU_LATEST     = UBUNTU_NOBLE
+UBUNTU_LATEST     = UBUNTU_RESOLUTE
 
 LINUX_MINT_22     = "docker.io/linuxmintd/mint22-amd64"
 LINUX_MINT_21     = "docker.io/linuxmintd/mint21-amd64"
@@ -168,6 +169,7 @@ builds = [
     # NBFC-Linux
     ProjectBuild("debian-trixie",   "debian.sh",     DEBIAN_TRIXIE,   "nbfc-linux", "*.deb"),
     ProjectBuild("debian-bookworm", "debian.sh",     DEBIAN_BOOKWORM, "nbfc-linux", "*.deb"),
+    ProjectBuild("ubuntu-resolute", "debian.sh",     UBUNTU_RESOLUTE, "nbfc-linux", "*.deb"),
     ProjectBuild("ubuntu-noble",    "debian.sh",     UBUNTU_NOBLE,    "nbfc-linux", "*.deb"),
     ProjectBuild("ubuntu-jammy",    "debian.sh",     UBUNTU_JAMMY,    "nbfc-linux", "*.deb"),
     ProjectBuild("linux-mint-22",   "debian.sh",     LINUX_MINT_22,   "nbfc-linux", "*.deb"),
@@ -180,6 +182,7 @@ builds = [
     # NBFC-XFCE4-Tray
     ProjectBuild("debian-trixie",   "debian.sh",     DEBIAN_TRIXIE,   "nbfc-xfce4-tray", "*.deb"),
     ProjectBuild("debian-bookworm", "debian.sh",     DEBIAN_BOOKWORM, "nbfc-xfce4-tray", "*.deb"),
+    ProjectBuild("ubuntu-resolute", "debian.sh",     UBUNTU_RESOLUTE, "nbfc-xfce4-tray", "*.deb"),
     ProjectBuild("ubuntu-noble",    "debian.sh",     UBUNTU_NOBLE,    "nbfc-xfce4-tray", "*.deb"),
     ProjectBuild("ubuntu-jammy",    "debian.sh",     UBUNTU_JAMMY,    "nbfc-xfce4-tray", "*.deb"),
     ProjectBuild("linux-mint-22",   "debian.sh",     LINUX_MINT_22,   "nbfc-xfce4-tray", "*.deb"),

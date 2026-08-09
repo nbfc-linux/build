@@ -11,6 +11,11 @@ cat /etc/debian_version || {
   exit 1
 }
 
+LIBXML=libxml2
+if grep -qF '26.04' /etc/os-release; then
+  LIBXML=libxml2-16
+fi
+
 apt update
 
 apt install -y \
@@ -21,7 +26,7 @@ apt install -y \
   libcurl4 libcurl4-openssl-dev \
   libssl-dev \
   liblua5.4-dev \
-  libxml2 libxml2-dev \
+  $LIBXML libxml2-dev \
   ruby
 
 export PATH="$HOME/.local/share/gem/ruby/3.3.0/bin/:$PATH" # debian trixie
@@ -58,7 +63,7 @@ fpm -s dir -t deb \
   --url "https://github.com/nbfc-linux/nbfc-linux" \
   --depends "libcurl4" \
   --depends "liblua5.4-0" \
-  --depends "libxml2" \
+  --depends "$LIBXML" \
   --depends "acpica-tools" \
   --depends "acpi-call" \
   --prefix / \
