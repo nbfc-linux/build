@@ -66,6 +66,7 @@ fpm -s dir -t deb \
   --depends "$LIBXML" \
   --depends "acpica-tools" \
   --depends "acpi-call" \
+  --depends "stress-ng" \
   --prefix / \
   -C "$DEST_DIR" \
   usr etc

@@ -56,6 +56,7 @@ $FPM -s dir -t rpm \
   --depends "liblua5_4-5" \
   --depends "libxml2" \
   --depends "acpica" \
+  --depends "stress-ng" \
   --prefix / \
   -C "$DEST_DIR" \
   usr etc bin

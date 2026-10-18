@@ -55,6 +55,7 @@ fpm -s dir -t rpm \
   --depends "lua-libs" \
   --depends "libxml2" \
   --depends "acpica-tools" \
+  --depends "stress-ng" \
   --prefix / \
   -C "$DEST_DIR" \
   usr etc bin
