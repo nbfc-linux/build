@@ -52,9 +52,7 @@ $FPM -s dir -t rpm \
   --maintainer "Benjamin Abendroth (braph93@gmx.de)" \
   --description "NoteBook FanControl ported to Linux" \
   --url "https://github.com/nbfc-linux/nbfc-linux" \
-  --depends "libcurl4" \
-  --depends "liblua5_4-5" \
-  --depends "libxml2" \
+  --rpm-autoreq \
   --depends "acpica" \
   --depends "stress-ng" \
   --prefix / \
